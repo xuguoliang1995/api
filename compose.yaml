@@ -1,0 +1,24 @@
+# 本地开发用 PostgreSQL。`./mvnw spring-boot:run` 时由 spring-boot-docker-compose
+# 自动拉起并接上连接信息，无需手工 export 环境变量。
+#
+# 这里的默认值与 application.properties 的默认值保持一致，仅用于本地开发；
+# 真实环境必须通过 DB_URL / DB_USERNAME / DB_PASSWORD 覆盖（见 harness/rules/30）。
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-myfirstproject}
+      POSTGRES_USER: ${DB_USERNAME:-myfirstproject}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-myfirstproject}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-myfirstproject} -d ${DB_NAME:-myfirstproject}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
