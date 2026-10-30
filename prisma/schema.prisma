@@ -1,0 +1,11 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 数据基座：当前垂直切片（health-check）不落库。
+// 业务实体在本节按变更演进添加。
