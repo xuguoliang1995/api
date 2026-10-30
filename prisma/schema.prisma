@@ -42,3 +42,47 @@ model Upvote {
   @@index([createdAt, postId])
   @@map("upvotes")
 }
+
+/// 城市目录（delta city-catalog）。`slug` 同时是 URL、内容关联键与测试锚点，
+/// 因此建唯一约束并由接口层拒绝修改（design D6）。
+///
+/// `isPublished` 刻意**不给默认值**：上线状态是业务决策，默认值会让「忘了填」静默
+/// 变成一个可能错误的上线/下线状态（tasks 5.6）。
+model City {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  nameZh      String   @map("name_zh")
+  isPublished Boolean  @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  attractions Attraction[]
+
+  // 清单查询按 (is_published, slug) 过滤 + 稳定次序
+  @@index([isPublished, slug])
+  @@map("cities")
+}
+
+/// 景点（delta attractions-catalog）。必属某城：`cityId` NOT NULL，外键用 Restrict
+/// ——城市是目录数据，删除仍有景点的城市应当被拒绝而不是把景点变成孤儿。
+///
+/// `viewCount` 是「详情页被打开的累计次数」，首页只读（design D4）。
+model Attraction {
+  id          String   @id @default(cuid())
+  name        String
+  cityId      String   @map("city_id")
+  city        City     @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  viewCount   Int      @default(0) @map("view_count")
+  imageUrl    String   @map("image_url")
+  imageWidth  Int      @map("image_width")
+  imageHeight Int      @map("image_height")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  // 列序与排序一致：ORDER BY view_count DESC, id ASC。
+  // 只建 view_count 单列也能用，但并列值仍需二次排序，加上 id 才能整体有序扫描。
+  @@index([viewCount(sort: Desc), id])
+  @@index([cityId])
+  @@map("attractions")
+}
