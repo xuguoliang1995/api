@@ -9,3 +9,36 @@ datasource db {
 
 // 数据基座：当前垂直切片（health-check）不落库。
 // 业务实体在本节按变更演进添加。
+
+/// 社区帖子：首页热门榜只暴露摘要（id / title / authorName / cityName / publishedAt
+/// 与窗口内票数），见 design D1。物理表名与列名按 harness/rules/40-database.md 转
+/// snake_case。
+model Post {
+  id          String   @id @default(cuid())
+  title       String
+  authorName  String   @map("author_name")
+  cityName    String?  @map("city_name")
+  publishedAt DateTime @map("published_at") @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  upvotes Upvote[]
+
+  // 次级排序按发布时间降序（design D2 / 索引需求表）
+  @@index([publishedAt])
+  @@map("posts")
+}
+
+/// Upvote 是独立记录而非帖子上的计数字段（design D3）：窗口内票数 = 窗口内记录数。
+/// 两个复合索引分别服务「按帖统计」（postId, createdAt）与「全局聚合」（createdAt, postId）——
+/// 排序方向不同，一个索引覆盖不了两种扫描。
+model Upvote {
+  id        String   @id @default(cuid())
+  postId    String   @map("post_id")
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([postId, createdAt])
+  @@index([createdAt, postId])
+  @@map("upvotes")
+}
