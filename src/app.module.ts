@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AttractionsModule } from './attractions/attractions.module';
+import { CitiesModule } from './cities/cities.module';
 import { HealthModule } from './health/health.module';
 import { PostsModule } from './posts/posts.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -11,6 +12,12 @@ import { PrismaModule } from './prisma/prisma.module';
  * （见 PrismaService 注释）。
  */
 @Module({
-  imports: [PrismaModule, HealthModule, PostsModule, AttractionsModule],
+  imports: [
+    PrismaModule,
+    HealthModule,
+    PostsModule,
+    AttractionsModule,
+    CitiesModule,
+  ],
 })
 export class AppModule {}
